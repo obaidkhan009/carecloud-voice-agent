@@ -1,0 +1,40 @@
+{
+  "name": "CareCloud Patient Registration",
+  "firstMessageMode": "assistant-speaks-first",
+  "firstMessage": "Hi, thanks for calling CareCloud. I'm Maya, and I can get you registered as a new patient in just a couple of minutes. To start, could I get your first and last name?",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "temperature": 0.3,
+    "maxTokens": 300,
+    "messages": [{ "role": "system", "content": "<<SYSTEM_PROMPT>>" }],
+    "tools": "<<TOOLS>>"
+  },
+  "transcriber": { "provider": "deepgram", "model": "nova-3", "language": "multi" },
+  "voice": { "provider": "vapi", "voiceId": "Paige" },
+  "server": { "url": "<<SERVER_URL>>", "secret": "<<SERVER_SECRET>>", "timeoutSeconds": 20 },
+  "serverMessages": ["tool-calls", "end-of-call-report"],
+  "silenceTimeoutSeconds": 30,
+  "maxDurationSeconds": 900,
+  "backgroundSound": "off",
+  "backgroundDenoisingEnabled": true,
+  "endCallMessage": "Thanks for calling CareCloud. Take care!",
+  "endCallPhrases": ["goodbye", "bye bye"],
+  "startSpeakingPlan": { "waitSeconds": 0.6, "smartEndpointingPlan": { "provider": "livekit" } },
+  "stopSpeakingPlan": { "numWords": 2, "voiceSeconds": 0.3, "backoffSeconds": 1.0 },
+  "artifactPlan": { "recordingEnabled": true, "transcriptPlan": { "enabled": true } },
+  "analysisPlan": {
+    "summaryPlan": { "enabled": true },
+    "structuredDataPlan": {
+      "enabled": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string" }, "last_name": { "type": "string" },
+          "date_of_birth": { "type": "string" }, "phone_number": { "type": "string" },
+          "registration_saved": { "type": "boolean" }, "wanted_to_start_over": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

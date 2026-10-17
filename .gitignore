@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+logs/
+.pytest_cache/
+.DS_Store
+vapi/.state.json

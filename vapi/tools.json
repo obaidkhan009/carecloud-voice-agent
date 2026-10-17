@@ -1,0 +1,106 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_patient_by_phone",
+      "description": "Check whether a patient record already exists for this phone number. Call it as soon as the caller gives their phone number.",
+      "parameters": {
+        "type": "object",
+        "properties": { "phone_number": { "type": "string", "description": "10-digit U.S. phone number, digits only" } },
+        "required": ["phone_number"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "validate_field",
+      "description": "Validate and normalize one registration field before moving on. Returns valid=false with a plain-English reason when the value is not acceptable.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "field": { "type": "string", "enum": ["first_name","last_name","date_of_birth","sex","phone_number","email","address_line_1","city","state","zip_code","insurance_member_id","emergency_contact_phone","emergency_contact_name"] },
+          "value": { "type": "string", "description": "The value as you understood it. Dates as MM/DD/YYYY, phone numbers as digits." }
+        },
+        "required": ["field", "value"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "save_patient",
+      "description": "Create the patient record. Call ONLY after the caller has heard everything read back and explicitly confirmed it is correct.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "date_of_birth": { "type": "string", "description": "MM/DD/YYYY" },
+          "sex": { "type": "string", "enum": ["Male", "Female", "Other", "Decline to Answer"] },
+          "phone_number": { "type": "string", "description": "10 digits" },
+          "email": { "type": "string" },
+          "address_line_1": { "type": "string" },
+          "address_line_2": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string", "description": "2-letter abbreviation" },
+          "zip_code": { "type": "string" },
+          "insurance_provider": { "type": "string" },
+          "insurance_member_id": { "type": "string" },
+          "preferred_language": { "type": "string" },
+          "emergency_contact_name": { "type": "string" },
+          "emergency_contact_phone": { "type": "string" },
+          "create_duplicate": { "type": "boolean", "description": "true only when the caller confirmed they are a different person than the existing record with this phone number" }
+        },
+        "required": ["first_name", "last_name", "date_of_birth", "sex", "phone_number", "address_line_1", "city", "state", "zip_code"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_patient",
+      "description": "Update an existing patient record (returning caller). Send only the fields that change, plus patient_id from lookup_patient_by_phone. Call only after the caller confirmed the changes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "patient_id": { "type": "string" },
+          "first_name": { "type": "string" }, "last_name": { "type": "string" },
+          "date_of_birth": { "type": "string" }, "sex": { "type": "string" },
+          "phone_number": { "type": "string" }, "email": { "type": "string" },
+          "address_line_1": { "type": "string" }, "address_line_2": { "type": "string" },
+          "city": { "type": "string" }, "state": { "type": "string" }, "zip_code": { "type": "string" },
+          "insurance_provider": { "type": "string" }, "insurance_member_id": { "type": "string" },
+          "preferred_language": { "type": "string" },
+          "emergency_contact_name": { "type": "string" }, "emergency_contact_phone": { "type": "string" }
+        },
+        "required": ["patient_id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_patient",
+      "description": "Fetch the full existing record for a returning caller so you can read back current values before updating.",
+      "parameters": { "type": "object", "properties": { "patient_id": { "type": "string" } }, "required": ["patient_id"] }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_appointment",
+      "description": "Book a mock first appointment after a successful registration.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "patient_id": { "type": "string" },
+          "preferred_day": { "type": "string", "description": "weekday name, e.g. Tuesday, or empty for the earliest" },
+          "preferred_time": { "type": "string", "enum": ["morning", "afternoon"] }
+        },
+        "required": ["patient_id"]
+      }
+    }
+  },
+  { "type": "endCall" }
+]

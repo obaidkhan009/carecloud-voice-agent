@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patient Registrations</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1b1f27; --muted:#6b7280; --line:#e5e7eb; --accent:#0f5fff; --danger:#c62828; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1115; --card:#171a21; --text:#e8eaf0; --muted:#9aa3b2; --line:#2a2f3a; --accent:#5b8cff; } }
+  * { box-sizing:border-box } body { margin:0; font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text) }
+  header { padding:20px 24px; border-bottom:1px solid var(--line); background:var(--card); display:flex; gap:16px; align-items:center; flex-wrap:wrap }
+  header h1 { font-size:18px; margin:0 } header .sub { color:var(--muted) }
+  main { padding:20px 24px; display:grid; grid-template-columns: 1fr; gap:20px; max-width:1300px; margin:0 auto }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px } .tile b { font-size:24px; display:block }
+  .tile span { color:var(--muted); font-size:12px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden }
+  .toolbar { display:flex; gap:10px; padding:12px; border-bottom:1px solid var(--line); flex-wrap:wrap; align-items:center }
+  input,select,button { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text) }
+  button { cursor:pointer } button.primary { background:var(--accent); color:#fff; border-color:var(--accent) } button.danger { color:var(--danger) }
+  table { width:100%; border-collapse:collapse } th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em }
+  tbody tr { cursor:pointer } tbody tr:hover { background:rgba(127,127,127,.08) } tbody tr.active { outline:2px solid var(--accent); outline-offset:-2px }
+  .wrap { overflow:auto }
+  .detail { padding:16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px 20px }
+  .detail div span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase } .detail div b { font-weight:500 }
+  .calls { padding:0 16px 16px } .call { border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:10px }
+  .call pre { white-space:pre-wrap; margin:8px 0 0; font-size:12px; max-height:260px; overflow:auto; background:var(--bg); padding:8px; border-radius:6px }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; background:rgba(127,127,127,.15) }
+  .empty { padding:30px; text-align:center; color:var(--muted) }
+  @media (max-width:640px){ header,main{padding:14px 16px} }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Patient Registrations</h1><div class="sub">Records created by the voice agent and the REST API</div></div>
+  <div style="margin-left:auto" class="sub">Auto-refresh every 15s · <a href="/docs">API docs</a></div>
+</header>
+<main>
+  <section class="tiles">
+    <div class="tile"><b id="t-total">–</b><span>Active patients</span></div>
+    <div class="tile"><b id="t-today">–</b><span>Registered today</span></div>
+    <div class="tile"><b id="t-calls">–</b><span>Logged calls</span></div>
+    <div class="tile"><b id="t-last">–</b><span>Last registration</span></div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <input id="q-last" placeholder="Last name" style="min-width:160px">
+      <input id="q-phone" placeholder="Phone (10 digits)" style="min-width:160px">
+      <input id="q-dob" placeholder="DOB MM/DD/YYYY" style="min-width:140px">
+      <button class="primary" onclick="load()">Search</button>
+      <button onclick="clearSearch()">Clear</button>
+      <span id="status" class="sub" style="margin-left:auto"></span>
+    </div>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>Name</th><th>DOB</th><th>Sex</th><th>Phone</th><th>City / State</th><th>Language</th><th>Insurance</th><th>Created (UTC)</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>No patients match.</div>
+    </div>
+  </section>
+
+  <section class="card" id="detail-card" hidden>
+    <div class="toolbar"><b id="d-title">Patient</b><span class="pill" id="d-id"></span>
+      <button class="danger" style="margin-left:auto" onclick="softDelete()">Soft-delete</button></div>
+    <div class="detail" id="detail"></div>
+    <div class="calls"><b>Calls linked to this patient</b><div id="d-calls"></div></div>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let patients = [], selected = null;
+const fmtPhone = d => d && d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : (d || '');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path, opts) {
+  const r = await fetch(path, opts); const j = await r.json();
+  if (j.error) throw new Error(j.error.message + (j.error.details ? ': ' + j.error.details.map(d => d.field + ' ' + d.message).join('; ') : ''));
+  return j.data;
+}
+function clearSearch(){ ['#q-last','#q-phone','#q-dob'].forEach(s => $(s).value=''); load(); }
+async function load() {
+  const p = new URLSearchParams();
+  if ($('#q-last').value) p.set('last_name', $('#q-last').value);
+  if ($('#q-phone').value) p.set('phone_number', $('#q-phone').value);
+  if ($('#q-dob').value) p.set('date_of_birth', $('#q-dob').value);
+  $('#status').textContent = 'Loading…';
+  try {
+    patients = await api('/patients?' + p.toString());
+    const calls = await api('/calls?limit=500');
+    render(calls);
+    $('#status').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch (e) { $('#status').textContent = 'Error: ' + e.message; }
+}
+function render(calls) {
+  const tb = $('#rows'); tb.innerHTML = '';
+  const today = new Date().toISOString().slice(0,10);
+  patients.forEach(p => {
+    const tr = document.createElement('tr'); tr.dataset.id = p.patient_id;
+    if (selected === p.patient_id) tr.classList.add('active');
+    tr.innerHTML = `<td><b>${esc(p.first_name)} ${esc(p.last_name)}</b></td><td>${esc(p.date_of_birth)}</td><td>${esc(p.sex)}</td>
+      <td>${fmtPhone(p.phone_number)}</td><td>${esc(p.city)}, ${esc(p.state)} ${esc(p.zip_code)}</td><td>${esc(p.preferred_language)}</td>
+      <td>${esc(p.insurance_provider || '—')}</td><td>${esc(p.created_at.replace('T',' ').slice(0,19))}</td>`;
+    tr.onclick = () => select(p.patient_id);
+    tb.appendChild(tr);
+  });
+  $('#empty').hidden = patients.length > 0;
+  $('#t-total').textContent = patients.length;
+  $('#t-today').textContent = patients.filter(p => p.created_at.slice(0,10) === today).length;
+  $('#t-calls').textContent = calls.length;
+  $('#t-last').textContent = patients[0] ? patients[0].created_at.replace('T',' ').slice(0,16) : '—';
+  if (selected && !patients.find(p => p.patient_id === selected)) { selected = null; $('#detail-card').hidden = true; }
+  if (selected) select(selected);
+}
+async function select(id) {
+  selected = id; const p = patients.find(x => x.patient_id === id); if (!p) return;
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.toggle('active', r.dataset.id === id));
+  $('#detail-card').hidden = false; $('#d-title').textContent = `${p.first_name} ${p.last_name}`; $('#d-id').textContent = p.patient_id;
+  const fields = ['first_name','last_name','date_of_birth','sex','phone_number','email','address_line_1','address_line_2','city','state','zip_code',
+    'insurance_provider','insurance_member_id','preferred_language','emergency_contact_name','emergency_contact_phone','created_at','updated_at'];
+  $('#detail').innerHTML = fields.map(f => `<div><span>${f.replace(/_/g,' ')}</span><b>${esc(f.includes('phone') ? fmtPhone(p[f]) : (p[f] ?? '—'))}</b></div>`).join('');
+  try {
+    const calls = await api('/calls?patient_id=' + id);
+    $('#d-calls').innerHTML = calls.length ? calls.map(c => `<div class="call">
+      <span class="pill">${esc(c.ended_reason || 'in progress')}</span> <span class="pill">call ${esc(c.vapi_call_id)}</span>
+      ${c.appointment ? `<span class="pill">appt: ${esc(c.appointment.spoken)}</span>` : ''}
+      <div style="margin-top:6px">${esc(c.summary || 'No summary yet.')}</div>
+      ${c.transcript ? `<pre>${esc(c.transcript)}</pre>` : ''}</div>`).join('') : '<div class="sub" style="margin-top:6px">No calls logged for this patient (created via API or seed).</div>';
+  } catch (e) { $('#d-calls').textContent = e.message; }
+}
+async function softDelete() {
+  if (!selected || !confirm('Soft-delete this patient? The row is kept with a deleted_at timestamp.')) return;
+  try { await api('/patients/' + selected, { method: 'DELETE' }); selected = null; $('#detail-card').hidden = true; load(); }
+  catch (e) { alert(e.message); }
+}
+load(); setInterval(load, 15000);
+</script>
+</body>
+</html>
