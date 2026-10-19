@@ -34,7 +34,7 @@ Re-run without `--number` whenever you edit the prompt or tools; it updates the 
 3. Tools tab: create each function from `vapi/tools.json` (name, description, parameters). For every tool set
    **Server URL** = `https://<railway-domain>/vapi/webhook`. Also add the built-in **End Call** tool.
 4. Advanced tab: Server URL = `https://<railway-domain>/vapi/webhook`, Server URL Secret = your `VAPI_SECRET`,
-   Server Messages = `tool-calls`, `end-of-call-report`. Transcriber: Deepgram nova-3, language `multi`. Voice: Vapi "Paige".
+   Server Messages = `tool-calls`, `end-of-call-report`. Transcriber: Deepgram nova-3, language `multi`. Voice: Vapi "Clara" (version 2, language auto).
 5. **Phone Numbers -> Create Phone Number -> Free Vapi Number**, pick an area code, then under *Inbound Settings*
    choose the assistant. The number shown is the one to send to CareCloud.
 

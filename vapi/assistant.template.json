@@ -11,7 +11,7 @@
     "tools": "<<TOOLS>>"
   },
   "transcriber": { "provider": "deepgram", "model": "nova-3", "language": "multi" },
-  "voice": { "provider": "vapi", "voiceId": "Paige" },
+  "voice": { "provider": "vapi", "voiceId": "Clara", "version": 2, "language": "auto" },
   "server": { "url": "<<SERVER_URL>>", "secret": "<<SERVER_SECRET>>", "timeoutSeconds": 20 },
   "serverMessages": ["tool-calls", "end-of-call-report"],
   "silenceTimeoutSeconds": 30,

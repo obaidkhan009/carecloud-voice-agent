@@ -5,9 +5,9 @@ validates and persists their demographics to PostgreSQL, and exposes them throug
 
 | Deliverable | Value |
 |---|---|
-| Phone number | **See `LIVE.md`** (filled in at deploy time) |
-| API base URL | **See `LIVE.md`** — Swagger at `/docs` |
-| Dashboard | `<API base URL>/dashboard` |
+| Phone number | **+1 (732) 813-8172** |
+| API base URL | https://api-production-686e1.up.railway.app — Swagger at `/docs` |
+| Dashboard | https://api-production-686e1.up.railway.app/dashboard |
 | Repository | https://github.com/obaidkhan009/carecloud-voice-agent |
 | Credentials | None needed. Seed patients: Jane Doe (201-555-0123), Carlos Rivera (732-555-0147). |
 
