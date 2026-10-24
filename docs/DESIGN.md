@@ -1,14 +1,10 @@
-# Voice AI Patient Registration Agent — Implementation Spec
+# Design Spec (written before coding)
 
-CareCloud take-home assessment (AI Engineer). Time budget: 3 hours. Target: a simple system that works
-flawlessly end to end, not an over-engineered one.
+This document was written in the first 20 minutes, before any code, to fix the architecture, data model, API contract
+and conversation design for the 3-hour build. It is kept here so reviewers can see which decisions were deliberate
+and compare the plan with what shipped. The README describes the final system; where the two differ, the README wins.
 
-Deliverables to send back to Muhammad Akhtar (HR):
-1. Repository URL (GitHub)
-2. US phone number to call
-3. API base URL
-4. Dashboard URL (HR asked for this explicitly, so it is NOT optional for us)
-5. Test notes / credentials
+Guiding principle from the brief: a simple system that works flawlessly beats an over-engineered one.
 
 ---
 
@@ -18,13 +14,13 @@ Deliverables to send back to Muhammad Akhtar (HR):
 |---|---|---|
 | Telephony + STT + TTS + turn-taking | **Vapi** | Free US number on the trial, handles interruptions/barge-in, out-of-order answers and latency for us. The PDF explicitly recommends it as "the fastest path". |
 | LLM | **OpenAI gpt-4o-mini** (via Vapi's built-in provider) | Lowest latency on Vapi, native tool calling, cheap. Claude Sonnet is a one-line swap in the assistant config if desired. |
-| Backend / REST API | **Python 3.12 + FastAPI + Pydantic v2 + SQLAlchemy 2** | Obaid's primary stack; Pydantic gives server-side validation + 422 responses for free. |
+| Backend / REST API | **Python 3.12 + FastAPI + Pydantic v2 + SQLAlchemy 2** | the author's primary stack; Pydantic gives server-side validation + 422 responses for free. |
 | Database | **PostgreSQL** on Railway (prod), **SQLite** locally | One `DATABASE_URL` env var switches engines. Postgres on Railway survives redeploys without a volume. |
 | Dashboard | Single static HTML page served by FastAPI at `/dashboard` (vanilla JS + fetch) | No build step, one file, zero extra deploy. |
 | Hosting | **Railway** (API + Postgres) | Public HTTPS URL for the Vapi webhook, free tier, Postgres add-on in one click. ngrok as fallback for local testing. |
 | Tests | **pytest + httpx** against SQLite in-memory | Bonus points, and protects the API while iterating on the voice side. |
 
-Trade-off logged for README: using Vapi's hosted LLM loop instead of a "custom LLM" endpoint means the
+Trade-off: using Vapi's hosted LLM loop instead of a "custom LLM" endpoint means the
 prompt and tool definitions live in a JSON config in the repo (`vapi/assistant.json`) and are pushed to Vapi
 via a script. We keep full control of validation, persistence and business logic in our own webhook.
 
@@ -269,16 +265,9 @@ LOG_TO_FILE=0
 
 ---
 
-## 11. Accounts and prerequisites (do before the clock starts)
-1. GitHub repo created (private is fine; add reviewer emails as collaborators later).
-2. Vapi account (vapi.ai) — trial credits, buy/claim a **free US number** in Phone Numbers.
-3. Railway account linked to GitHub; Postgres plugin available.
-4. OpenAI key only if Vapi trial credits run out (Vapi bundles LLM usage otherwise).
-5. Local: Python 3.12, `pip`, `ngrok` for local webhook testing.
-
 ---
 
-## 12. Implementation timeline (3 h, strict)
+## 11. Implementation timeline (3 h, strict)
 
 | Time | Task | Done when |
 |---|---|---|
@@ -293,12 +282,11 @@ LOG_TO_FILE=0
 | 2:40–2:55 | README (setup, architecture, stack justification, env vars, limitations, next steps, prompt link, phone + URLs) | Another engineer could run it |
 | 2:55–3:00 | Final call test, second call persistence check, push, send email | Submitted |
 
-If behind schedule, cut in this order: appointment bonus -> Spanish -> dashboard polish -> tests. Never cut
-read-back/confirm, validation, or persistence.
+If behind schedule, bonus items go first; read-back/confirm, validation and persistence are never cut.
 
 ---
 
-## 13. Test plan before submitting
+## 12. Test plan before submitting
 1. `pytest` green.
 2. `POST /patients` with bad DOB (future), bad phone, bad state -> 422 with field details.
 3. `GET /patients?last_name=doe` returns seed Jane Doe. `DELETE` then `GET /patients/{id}` -> 404.
@@ -311,7 +299,7 @@ read-back/confirm, validation, or persistence.
 
 ---
 
-## 14. Known limitations / Next Steps (for README)
+## 13. Known limitations / Next Steps (for README)
 - No auth on API/dashboard (add API key header or Cognito).
 - No PHI encryption at rest beyond Railway defaults; not HIPAA (explicitly out of scope).
 - Vapi hosted LLM loop; a custom-LLM endpoint (Claude) would allow stricter state machine control.
@@ -319,16 +307,3 @@ read-back/confirm, validation, or persistence.
 - Appointment scheduling is mocked; would integrate with a calendar service.
 - Single-region deploy, no rate limiting, no retries/queue for webhook writes.
 
----
-
-## 15. Submission email template
-
-Subject: Voice AI Agent Assessment — Submission — Obaid Ullah
-
-- Repository: <github url> (reviewers added)
-- Phone number: +1 (XXX) XXX-XXXX
-- API base URL: https://<app>.up.railway.app  (Swagger at /docs)
-- Dashboard: https://<app>.up.railway.app/dashboard
-- Notes: no credentials required; seed patients Jane Doe (201-555-0123) and Carlos Rivera; try calling from
-  201-555-0123 spoofing is not needed — say that phone number during the call to trigger duplicate detection.
-  Transcripts at /calls. Prompt at vapi/system_prompt.md.

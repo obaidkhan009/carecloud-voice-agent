@@ -7,3 +7,5 @@ logs/
 .pytest_cache/
 .DS_Store
 vapi/.state.json
+docs/*.pdf
+docs/.SPEC_internal.md

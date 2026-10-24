@@ -17,6 +17,8 @@ validates and persists their demographics to PostgreSQL, and exposes them throug
 
 ## Architecture
 
+The pre-coding design spec is in [docs/DESIGN.md](docs/DESIGN.md); the Vapi setup guide is in [docs/VAPI_SETUP.md](docs/VAPI_SETUP.md).
+
 ```
  Caller ──PSTN──▶ Vapi (free U.S. number · Deepgram STT · Vapi TTS · gpt-4o-mini tool loop)
                       │
